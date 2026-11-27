@@ -1,0 +1,6 @@
+{
+  "name": "PetShop Nova",
+  "description": "Tienda en línea de productos para perros y gatos en Costa Rica con panel administrativo conectado a SQL Server.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

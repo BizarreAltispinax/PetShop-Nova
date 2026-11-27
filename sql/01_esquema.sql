@@ -1,11 +1,11 @@
 /* =====================================================================
    PetShop Nova - Proyecto Programado II (Bases de Datos)
-   01_esquema.sql : base de datos, tablas, restricciones e índices
+   01_esquema.sql : base de datos, 27 tablas, restricciones e índices
    Motor: Microsoft SQL Server 2019 o superior (probado para SSMS 22)
    Re-ejecutable: borra y vuelve a crear la base completa.
    Los nombres, tipos y nulos siguen el Diccionario de datos.
    ===================================================================== */
-/*
+
 USE master;
 GO
 
@@ -15,7 +15,6 @@ BEGIN
     DROP DATABASE PetShopNova;
 END
 GO
-*/
 
 CREATE DATABASE PetShopNova;
 GO
@@ -28,7 +27,7 @@ GO
    ===================================================================== */
 
 -- Catálogo con IDs fijos (1 = Administrador, 2 = Cliente): sin IDENTITY
-CREATE TABLE Rol (
+CREATE TABLE dbo.Rol (
     idRol           INT             NOT NULL,
     nombreRol       NVARCHAR(30)    NOT NULL,
     CONSTRAINT PK_Rol           PRIMARY KEY (idRol),
@@ -36,7 +35,7 @@ CREATE TABLE Rol (
 );
 GO
 
-CREATE TABLE Usuario (
+CREATE TABLE dbo.Usuario (
     idUsuario       INT IDENTITY(1,1) NOT NULL,
     idRol           INT             NOT NULL,
     correo          NVARCHAR(150)   NOT NULL,
@@ -44,13 +43,13 @@ CREATE TABLE Usuario (
     activo          BIT             NOT NULL CONSTRAINT DF_Usuario_Activo DEFAULT (1),
     fechaCreacion   DATETIME2       NOT NULL CONSTRAINT DF_Usuario_Fecha  DEFAULT (SYSDATETIME()),
     CONSTRAINT PK_Usuario           PRIMARY KEY (idUsuario),
-    CONSTRAINT FK_Usuario_Rol       FOREIGN KEY (idRol) REFERENCES Rol (idRol),
+    CONSTRAINT FK_Usuario_Rol       FOREIGN KEY (idRol) REFERENCES dbo.Rol (idRol),
     CONSTRAINT UQ_Usuario_Correo    UNIQUE (correo),
     CONSTRAINT CK_Usuario_Correo    CHECK (correo LIKE N'%_@_%._%')
 );
 GO
 
-CREATE TABLE ZonaEnvio (
+CREATE TABLE dbo.ZonaEnvio (
     idZonaEnvio     INT IDENTITY(1,1) NOT NULL,
     nombreZonaEnvio NVARCHAR(200)   NOT NULL,
     tarifa          DECIMAL(10,2)   NOT NULL,
@@ -61,7 +60,7 @@ CREATE TABLE ZonaEnvio (
 );
 GO
 
-CREATE TABLE Cliente (
+CREATE TABLE dbo.Cliente (
     idCliente       INT IDENTITY(1,1) NOT NULL,
     idUsuario       INT             NOT NULL,
     nombreCliente   NVARCHAR(80)    NOT NULL,
@@ -70,13 +69,13 @@ CREATE TABLE Cliente (
     activo          BIT             NOT NULL CONSTRAINT DF_Cliente_Activo DEFAULT (1),
     fechaNacimiento DATE            NOT NULL,
     CONSTRAINT PK_Cliente               PRIMARY KEY (idCliente),
-    CONSTRAINT FK_Cliente_Usuario       FOREIGN KEY (idUsuario) REFERENCES Usuario (idUsuario),
+    CONSTRAINT FK_Cliente_Usuario       FOREIGN KEY (idUsuario) REFERENCES dbo.Usuario (idUsuario),
     CONSTRAINT UQ_Cliente_Usuario       UNIQUE (idUsuario),          -- 1 usuario : máx. 1 cliente
     CONSTRAINT CK_Cliente_FechaNac      CHECK (fechaNacimiento < CAST(GETDATE() AS DATE))
 );
 GO
 
-CREATE TABLE Direccion (
+CREATE TABLE dbo.Direccion (
     idDireccion     INT IDENTITY(1,1) NOT NULL,
     idCliente       INT             NOT NULL,
     idZonaEnvio     INT             NOT NULL,
@@ -87,8 +86,8 @@ CREATE TABLE Direccion (
     esPrincipal     BIT             NOT NULL CONSTRAINT DF_Direccion_Principal DEFAULT (0),
     activo          BIT             NOT NULL CONSTRAINT DF_Direccion_Activo    DEFAULT (1),
     CONSTRAINT PK_Direccion             PRIMARY KEY (idDireccion),
-    CONSTRAINT FK_Direccion_Cliente     FOREIGN KEY (idCliente)   REFERENCES Cliente (idCliente),
-    CONSTRAINT FK_Direccion_ZonaEnvio   FOREIGN KEY (idZonaEnvio) REFERENCES ZonaEnvio (idZonaEnvio)
+    CONSTRAINT FK_Direccion_Cliente     FOREIGN KEY (idCliente)   REFERENCES dbo.Cliente (idCliente),
+    CONSTRAINT FK_Direccion_ZonaEnvio   FOREIGN KEY (idZonaEnvio) REFERENCES dbo.ZonaEnvio (idZonaEnvio)
 );
 GO
 
@@ -96,7 +95,7 @@ GO
    CATÁLOGO DE PRODUCTOS
    ===================================================================== */
 
-CREATE TABLE Marca (
+CREATE TABLE dbo.Marca (
     idMarca         INT IDENTITY(1,1) NOT NULL,
     nombreMarca     NVARCHAR(100)   NOT NULL,
     activo          BIT             NOT NULL CONSTRAINT DF_Marca_Activo DEFAULT (1),
@@ -105,7 +104,7 @@ CREATE TABLE Marca (
 );
 GO
 
-CREATE TABLE Categoria (
+CREATE TABLE dbo.Categoria (
     idCategoria     INT IDENTITY(1,1) NOT NULL,
     nombreCategoria NVARCHAR(100)   NOT NULL,
     activo          BIT             NOT NULL CONSTRAINT DF_Categoria_Activo DEFAULT (1),
@@ -114,7 +113,7 @@ CREATE TABLE Categoria (
 );
 GO
 
-CREATE TABLE Producto (
+CREATE TABLE dbo.Producto (
     idProducto       INT IDENTITY(1,1) NOT NULL,
     sku              NVARCHAR(30)    NOT NULL,
     idMarca          INT             NOT NULL,
@@ -128,8 +127,8 @@ CREATE TABLE Producto (
     destacado        BIT             NOT NULL CONSTRAINT DF_Producto_Destacado   DEFAULT (0),
     activo           BIT             NOT NULL CONSTRAINT DF_Producto_Activo      DEFAULT (1),
     CONSTRAINT PK_Producto              PRIMARY KEY (idProducto),
-    CONSTRAINT FK_Producto_Marca        FOREIGN KEY (idMarca)     REFERENCES Marca (idMarca),
-    CONSTRAINT FK_Producto_Categoria    FOREIGN KEY (idCategoria) REFERENCES Categoria (idCategoria),
+    CONSTRAINT FK_Producto_Marca        FOREIGN KEY (idMarca)     REFERENCES dbo.Marca (idMarca),
+    CONSTRAINT FK_Producto_Categoria    FOREIGN KEY (idCategoria) REFERENCES dbo.Categoria (idCategoria),
     CONSTRAINT UQ_Producto_Sku          UNIQUE (sku),
     CONSTRAINT CK_Producto_Precio       CHECK (precioVigente > 0),
     CONSTRAINT CK_Producto_Costo        CHECK (costo >= 0),
@@ -137,19 +136,19 @@ CREATE TABLE Producto (
 );
 GO
 
-CREATE TABLE ImagenProducto (
+CREATE TABLE dbo.ImagenProducto (
     idImagen        INT IDENTITY(1,1) NOT NULL,
     idProducto      INT             NOT NULL,
     url             NVARCHAR(300)   NOT NULL,
     esPrincipal     BIT             NOT NULL CONSTRAINT DF_ImagenProducto_Principal DEFAULT (0),
     CONSTRAINT PK_ImagenProducto            PRIMARY KEY (idImagen),
-    CONSTRAINT FK_ImagenProducto_Producto   FOREIGN KEY (idProducto) REFERENCES Producto (idProducto)
+    CONSTRAINT FK_ImagenProducto_Producto   FOREIGN KEY (idProducto) REFERENCES dbo.Producto (idProducto)
 );
 GO
 
 /* Regla de combinación: las promociones NO se acumulan; si un producto tiene
    varias vigentes, el checkout aplica la de mayor descuento. */
-CREATE TABLE Promocion (
+CREATE TABLE dbo.Promocion (
     idPromocion     INT IDENTITY(1,1) NOT NULL,
     nombrePromocion NVARCHAR(100)   NOT NULL,
     tipoDescuento   CHAR(1)         NOT NULL,
@@ -165,12 +164,32 @@ CREATE TABLE Promocion (
 );
 GO
 
-CREATE TABLE ProductoPromocion (
+CREATE TABLE dbo.ProductoPromocion (
     idPromocion     INT             NOT NULL,
     idProducto      INT             NOT NULL,
     CONSTRAINT PK_ProductoPromocion             PRIMARY KEY (idPromocion, idProducto),
-    CONSTRAINT FK_ProductoPromocion_Promocion   FOREIGN KEY (idPromocion) REFERENCES Promocion (idPromocion),
-    CONSTRAINT FK_ProductoPromocion_Producto    FOREIGN KEY (idProducto)  REFERENCES Producto (idProducto)
+    CONSTRAINT FK_ProductoPromocion_Promocion   FOREIGN KEY (idPromocion) REFERENCES dbo.Promocion (idPromocion),
+    CONSTRAINT FK_ProductoPromocion_Producto    FOREIGN KEY (idProducto)  REFERENCES dbo.Producto (idProducto)
+);
+GO
+
+-- Especies de mascota a las que va dirigido cada producto (la tienda no vende animales).
+CREATE TABLE dbo.Especie (
+    idEspecie       INT IDENTITY(1,1) NOT NULL,
+    nombreEspecie   NVARCHAR(60)    NOT NULL,
+    activo          BIT             NOT NULL CONSTRAINT DF_Especie_Activo DEFAULT (1),
+    CONSTRAINT PK_Especie           PRIMARY KEY (idEspecie),
+    CONSTRAINT UQ_Especie_Nombre    UNIQUE (nombreEspecie)
+);
+GO
+
+-- Muchos a muchos: un producto puede servir a varias especies (p. ej. un cepillo para perro y gato)
+CREATE TABLE dbo.ProductoEspecie (
+    idProducto      INT             NOT NULL,
+    idEspecie       INT             NOT NULL,
+    CONSTRAINT PK_ProductoEspecie           PRIMARY KEY (idProducto, idEspecie),
+    CONSTRAINT FK_ProductoEspecie_Producto  FOREIGN KEY (idProducto) REFERENCES dbo.Producto (idProducto),
+    CONSTRAINT FK_ProductoEspecie_Especie   FOREIGN KEY (idEspecie)  REFERENCES dbo.Especie (idEspecie)
 );
 GO
 
@@ -178,12 +197,12 @@ GO
    INVENTARIO (MovimientoInventario se crea después de Pedido)
    ===================================================================== */
 
-CREATE TABLE Inventario (
+CREATE TABLE dbo.Inventario (
     idProducto          INT         NOT NULL,
     existencia          INT         NOT NULL CONSTRAINT DF_Inventario_Existencia DEFAULT (0),
     fechaActualizacion  DATETIME2   NOT NULL CONSTRAINT DF_Inventario_Fecha      DEFAULT (SYSDATETIME()),
     CONSTRAINT PK_Inventario            PRIMARY KEY (idProducto),
-    CONSTRAINT FK_Inventario_Producto   FOREIGN KEY (idProducto) REFERENCES Producto (idProducto),
+    CONSTRAINT FK_Inventario_Producto   FOREIGN KEY (idProducto) REFERENCES dbo.Producto (idProducto),
     CONSTRAINT CK_Inventario_Existencia CHECK (existencia >= 0)
 );
 GO
@@ -193,7 +212,7 @@ GO
    ===================================================================== */
 
 -- IDs fijos (1 Pendiente ... 6 Cancelado) porque los procedimientos los usan: sin IDENTITY
-CREATE TABLE EstadoPedido (
+CREATE TABLE dbo.EstadoPedido (
     idEstado            INT             NOT NULL,
     nombreEstadoPedido  NVARCHAR(30)    NOT NULL,
     orden               TINYINT         NOT NULL,
@@ -202,17 +221,17 @@ CREATE TABLE EstadoPedido (
 );
 GO
 
-CREATE TABLE TransicionEstado (
+CREATE TABLE dbo.TransicionEstado (
     idEstadoOrigen  INT             NOT NULL,
     idEstadoDestino INT             NOT NULL,
     CONSTRAINT PK_TransicionEstado          PRIMARY KEY (idEstadoOrigen, idEstadoDestino),
-    CONSTRAINT FK_TransicionEstado_Origen   FOREIGN KEY (idEstadoOrigen)  REFERENCES EstadoPedido (idEstado),
-    CONSTRAINT FK_TransicionEstado_Destino  FOREIGN KEY (idEstadoDestino) REFERENCES EstadoPedido (idEstado),
+    CONSTRAINT FK_TransicionEstado_Origen   FOREIGN KEY (idEstadoOrigen)  REFERENCES dbo.EstadoPedido (idEstado),
+    CONSTRAINT FK_TransicionEstado_Destino  FOREIGN KEY (idEstadoDestino) REFERENCES dbo.EstadoPedido (idEstado),
     CONSTRAINT CK_TransicionEstado_Distinto CHECK (idEstadoOrigen <> idEstadoDestino)
 );
 GO
 
-CREATE TABLE MetodoPago (
+CREATE TABLE dbo.MetodoPago (
     idMetodoPago     INT IDENTITY(1,1) NOT NULL,
     nombreMetodoPago NVARCHAR(40)   NOT NULL,
     activo           BIT            NOT NULL CONSTRAINT DF_MetodoPago_Activo DEFAULT (1),
@@ -225,30 +244,30 @@ GO
    CARRITO Y RESEÑAS
    ===================================================================== */
 
-CREATE TABLE Carrito (
+CREATE TABLE dbo.Carrito (
     idCarrito       INT IDENTITY(1,1) NOT NULL,
     idCliente       INT             NOT NULL,
     fechaCreacion   DATETIME2       NOT NULL CONSTRAINT DF_Carrito_Fecha  DEFAULT (SYSDATETIME()),
     activo          BIT             NOT NULL CONSTRAINT DF_Carrito_Activo DEFAULT (1),
     CONSTRAINT PK_Carrito           PRIMARY KEY (idCarrito),
-    CONSTRAINT FK_Carrito_Cliente   FOREIGN KEY (idCliente) REFERENCES Cliente (idCliente)
+    CONSTRAINT FK_Carrito_Cliente   FOREIGN KEY (idCliente) REFERENCES dbo.Cliente (idCliente)
 );
 GO
 
-CREATE TABLE DetalleCarrito (
+CREATE TABLE dbo.DetalleCarrito (
     idDetalleCarrito INT IDENTITY(1,1) NOT NULL,
     idCarrito        INT            NOT NULL,
     idProducto       INT            NOT NULL,
     cantidad         INT            NOT NULL,
     CONSTRAINT PK_DetalleCarrito            PRIMARY KEY (idDetalleCarrito),
-    CONSTRAINT FK_DetalleCarrito_Carrito    FOREIGN KEY (idCarrito)  REFERENCES Carrito (idCarrito),
-    CONSTRAINT FK_DetalleCarrito_Producto   FOREIGN KEY (idProducto) REFERENCES Producto (idProducto),
+    CONSTRAINT FK_DetalleCarrito_Carrito    FOREIGN KEY (idCarrito)  REFERENCES dbo.Carrito (idCarrito),
+    CONSTRAINT FK_DetalleCarrito_Producto   FOREIGN KEY (idProducto) REFERENCES dbo.Producto (idProducto),
     CONSTRAINT UQ_DetalleCarrito_Producto   UNIQUE (idCarrito, idProducto),   -- sin líneas duplicadas
     CONSTRAINT CK_DetalleCarrito_Cantidad   CHECK (cantidad > 0)
 );
 GO
 
-CREATE TABLE Resena (
+CREATE TABLE dbo.Resena (
     idResena        INT IDENTITY(1,1) NOT NULL,
     idCliente       INT             NOT NULL,
     idProducto      INT             NOT NULL,
@@ -256,8 +275,8 @@ CREATE TABLE Resena (
     comentario      NVARCHAR(500)   NULL,
     fecha           DATETIME2       NOT NULL CONSTRAINT DF_Resena_Fecha DEFAULT (SYSDATETIME()),
     CONSTRAINT PK_Resena                PRIMARY KEY (idResena),
-    CONSTRAINT FK_Resena_Cliente        FOREIGN KEY (idCliente)  REFERENCES Cliente (idCliente),
-    CONSTRAINT FK_Resena_Producto       FOREIGN KEY (idProducto) REFERENCES Producto (idProducto),
+    CONSTRAINT FK_Resena_Cliente        FOREIGN KEY (idCliente)  REFERENCES dbo.Cliente (idCliente),
+    CONSTRAINT FK_Resena_Producto       FOREIGN KEY (idProducto) REFERENCES dbo.Producto (idProducto),
     CONSTRAINT UQ_Resena_ClienteProducto UNIQUE (idCliente, idProducto),     -- una reseña por cliente y producto
     CONSTRAINT CK_Resena_Calificacion   CHECK (calificacion BETWEEN 1 AND 5)
 );
@@ -270,7 +289,7 @@ GO
 /* Desnormalización justificada: subtotal, descuentoTotal y total se derivan del
    detalle; se guardan para fijar el importe cobrado y acelerar los reportes.
    CK_Pedido_Total garantiza que siempre cuadren. */
-CREATE TABLE Pedido (
+CREATE TABLE dbo.Pedido (
     idPedido        INT IDENTITY(1,1) NOT NULL,
     idCliente       INT             NOT NULL,
     idDireccion     INT             NOT NULL,
@@ -281,9 +300,9 @@ CREATE TABLE Pedido (
     costoEnvio      DECIMAL(12,2)   NOT NULL,
     total           DECIMAL(12,2)   NOT NULL,
     CONSTRAINT PK_Pedido                PRIMARY KEY (idPedido),
-    CONSTRAINT FK_Pedido_Cliente        FOREIGN KEY (idCliente)   REFERENCES Cliente (idCliente),
-    CONSTRAINT FK_Pedido_Direccion      FOREIGN KEY (idDireccion) REFERENCES Direccion (idDireccion),
-    CONSTRAINT FK_Pedido_Estado         FOREIGN KEY (idEstado)    REFERENCES EstadoPedido (idEstado),
+    CONSTRAINT FK_Pedido_Cliente        FOREIGN KEY (idCliente)   REFERENCES dbo.Cliente (idCliente),
+    CONSTRAINT FK_Pedido_Direccion      FOREIGN KEY (idDireccion) REFERENCES dbo.Direccion (idDireccion),
+    CONSTRAINT FK_Pedido_Estado         FOREIGN KEY (idEstado)    REFERENCES dbo.EstadoPedido (idEstado),
     CONSTRAINT CK_Pedido_Subtotal       CHECK (subtotal >= 0),
     CONSTRAINT CK_Pedido_DescuentoNoNeg CHECK (descuentoTotal >= 0),
     CONSTRAINT CK_Pedido_Descuento      CHECK (descuentoTotal <= subtotal),
@@ -293,7 +312,7 @@ CREATE TABLE Pedido (
 GO
 
 -- Precio, costo y descuento HISTÓRICOS: se copian al confirmar el pedido
-CREATE TABLE DetallePedido (
+CREATE TABLE dbo.DetallePedido (
     idDetallePedido   INT IDENTITY(1,1) NOT NULL,
     idPedido          INT           NOT NULL,
     idProducto        INT           NOT NULL,
@@ -303,9 +322,9 @@ CREATE TABLE DetallePedido (
     costoUnitario     DECIMAL(12,2) NOT NULL,
     descuentoUnitario DECIMAL(12,2) NOT NULL CONSTRAINT DF_DetallePedido_Descuento DEFAULT (0),
     CONSTRAINT PK_DetallePedido             PRIMARY KEY (idDetallePedido),
-    CONSTRAINT FK_DetallePedido_Pedido      FOREIGN KEY (idPedido)    REFERENCES Pedido (idPedido),
-    CONSTRAINT FK_DetallePedido_Producto    FOREIGN KEY (idProducto)  REFERENCES Producto (idProducto),
-    CONSTRAINT FK_DetallePedido_Promocion   FOREIGN KEY (idPromocion) REFERENCES Promocion (idPromocion),
+    CONSTRAINT FK_DetallePedido_Pedido      FOREIGN KEY (idPedido)    REFERENCES dbo.Pedido (idPedido),
+    CONSTRAINT FK_DetallePedido_Producto    FOREIGN KEY (idProducto)  REFERENCES dbo.Producto (idProducto),
+    CONSTRAINT FK_DetallePedido_Promocion   FOREIGN KEY (idPromocion) REFERENCES dbo.Promocion (idPromocion),
     CONSTRAINT UQ_DetallePedido_Producto    UNIQUE (idPedido, idProducto),     -- sin líneas duplicadas
     CONSTRAINT CK_DetallePedido_Cantidad    CHECK (cantidad > 0),
     CONSTRAINT CK_DetallePedido_Precio      CHECK (precioUnitario >= 0),
@@ -314,19 +333,19 @@ CREATE TABLE DetallePedido (
 );
 GO
 
-CREATE TABLE HistorialEstadoPedido (
+CREATE TABLE dbo.HistorialEstadoPedido (
     idHistorial     INT IDENTITY(1,1) NOT NULL,
     idPedido        INT             NOT NULL,
     idEstado        INT             NOT NULL,
     fecha           DATETIME2       NOT NULL CONSTRAINT DF_HistorialEstadoPedido_Fecha DEFAULT (SYSDATETIME()),
     CONSTRAINT PK_HistorialEstadoPedido         PRIMARY KEY (idHistorial),
-    CONSTRAINT FK_HistorialEstadoPedido_Pedido  FOREIGN KEY (idPedido) REFERENCES Pedido (idPedido),
-    CONSTRAINT FK_HistorialEstadoPedido_Estado  FOREIGN KEY (idEstado) REFERENCES EstadoPedido (idEstado)
+    CONSTRAINT FK_HistorialEstadoPedido_Pedido  FOREIGN KEY (idPedido) REFERENCES dbo.Pedido (idPedido),
+    CONSTRAINT FK_HistorialEstadoPedido_Estado  FOREIGN KEY (idEstado) REFERENCES dbo.EstadoPedido (idEstado)
 );
 GO
 
 -- Va después de Pedido porque puede referenciar el pedido que originó el movimiento
-CREATE TABLE MovimientoInventario (
+CREATE TABLE dbo.MovimientoInventario (
     idMovimiento    INT IDENTITY(1,1) NOT NULL,
     idProducto      INT             NOT NULL,
     idUsuario       INT             NOT NULL,
@@ -336,9 +355,9 @@ CREATE TABLE MovimientoInventario (
     fecha           DATETIME2       NOT NULL CONSTRAINT DF_MovimientoInventario_Fecha DEFAULT (SYSDATETIME()),
     motivo          NVARCHAR(200)   NOT NULL,
     CONSTRAINT PK_MovimientoInventario          PRIMARY KEY (idMovimiento),
-    CONSTRAINT FK_MovimientoInventario_Producto FOREIGN KEY (idProducto) REFERENCES Producto (idProducto),
-    CONSTRAINT FK_MovimientoInventario_Usuario  FOREIGN KEY (idUsuario)  REFERENCES Usuario (idUsuario),
-    CONSTRAINT FK_MovimientoInventario_Pedido   FOREIGN KEY (idPedido)   REFERENCES Pedido (idPedido),
+    CONSTRAINT FK_MovimientoInventario_Producto FOREIGN KEY (idProducto) REFERENCES dbo.Producto (idProducto),
+    CONSTRAINT FK_MovimientoInventario_Usuario  FOREIGN KEY (idUsuario)  REFERENCES dbo.Usuario (idUsuario),
+    CONSTRAINT FK_MovimientoInventario_Pedido   FOREIGN KEY (idPedido)   REFERENCES dbo.Pedido (idPedido),
     CONSTRAINT CK_MovimientoInventario_Tipo     CHECK (tipo IN (N'ENTRADA', N'SALIDA', N'AJUSTE')),
     CONSTRAINT CK_MovimientoInventario_Cantidad CHECK ((tipo IN (N'ENTRADA', N'SALIDA') AND cantidad > 0)
                                                        OR (tipo = N'AJUSTE' AND cantidad <> 0))
@@ -349,7 +368,7 @@ GO
    PAGOS Y ENVÍOS (simulados)
    ===================================================================== */
 
-CREATE TABLE Pago (
+CREATE TABLE dbo.Pago (
     idPago          INT IDENTITY(1,1) NOT NULL,
     idPedido        INT             NOT NULL,
     idMetodoPago    INT             NOT NULL,
@@ -358,8 +377,8 @@ CREATE TABLE Pago (
     referencia      NVARCHAR(50)    NOT NULL,
     fecha           DATETIME2       NOT NULL CONSTRAINT DF_Pago_Fecha DEFAULT (SYSDATETIME()),
     CONSTRAINT PK_Pago              PRIMARY KEY (idPago),
-    CONSTRAINT FK_Pago_Pedido       FOREIGN KEY (idPedido)     REFERENCES Pedido (idPedido),
-    CONSTRAINT FK_Pago_MetodoPago   FOREIGN KEY (idMetodoPago) REFERENCES MetodoPago (idMetodoPago),
+    CONSTRAINT FK_Pago_Pedido       FOREIGN KEY (idPedido)     REFERENCES dbo.Pedido (idPedido),
+    CONSTRAINT FK_Pago_MetodoPago   FOREIGN KEY (idMetodoPago) REFERENCES dbo.MetodoPago (idMetodoPago),
     CONSTRAINT UQ_Pago_Referencia   UNIQUE (referencia),
     CONSTRAINT CK_Pago_Monto        CHECK (monto > 0),
     CONSTRAINT CK_Pago_Estado       CHECK (estadoPago IN (N'Aprobado', N'Rechazado', N'Reembolsado'))
@@ -367,7 +386,7 @@ CREATE TABLE Pago (
 GO
 
 -- La fila se crea al confirmar; guía y fechas se llenan al pasar a Enviado / Entregado
-CREATE TABLE Envio (
+CREATE TABLE dbo.Envio (
     idEnvio         INT IDENTITY(1,1) NOT NULL,
     idPedido        INT             NOT NULL,
     transportista   NVARCHAR(60)    NOT NULL,
@@ -375,7 +394,7 @@ CREATE TABLE Envio (
     fechaEnvio      DATETIME2       NULL,
     fechaEntrega    DATETIME2       NULL,
     CONSTRAINT PK_Envio         PRIMARY KEY (idEnvio),
-    CONSTRAINT FK_Envio_Pedido  FOREIGN KEY (idPedido) REFERENCES Pedido (idPedido),
+    CONSTRAINT FK_Envio_Pedido  FOREIGN KEY (idPedido) REFERENCES dbo.Pedido (idPedido),
     CONSTRAINT UQ_Envio_Pedido  UNIQUE (idPedido),                          -- 1 pedido : máx. 1 envío
     CONSTRAINT CK_Envio_Fechas  CHECK (fechaEntrega IS NULL
                                        OR (fechaEnvio IS NOT NULL AND fechaEntrega >= fechaEnvio))
@@ -386,7 +405,7 @@ GO
    AUDITORÍA (sin FK a propósito: la llenan los triggers de 05_triggers.sql)
    ===================================================================== */
 
-CREATE TABLE AuditoriaCambio (
+CREATE TABLE dbo.AuditoriaCambio (
     idAuditoria     INT IDENTITY(1,1) NOT NULL,
     tablaAfectada   NVARCHAR(50)    NOT NULL,
     idRegistro      INT             NOT NULL,
@@ -406,19 +425,19 @@ GO
 
 -- Un solo carrito activo por cliente
 CREATE UNIQUE NONCLUSTERED INDEX UX_Carrito_ClienteActivo
-    ON Carrito (idCliente) WHERE activo = 1;
+    ON dbo.Carrito (idCliente) WHERE activo = 1;
 
 -- Una sola dirección principal activa por cliente
 CREATE UNIQUE NONCLUSTERED INDEX UX_Direccion_Principal
-    ON Direccion (idCliente) WHERE esPrincipal = 1 AND activo = 1;
+    ON dbo.Direccion (idCliente) WHERE esPrincipal = 1 AND activo = 1;
 
 -- Una sola imagen principal por producto
 CREATE UNIQUE NONCLUSTERED INDEX UX_ImagenProducto_Principal
-    ON ImagenProducto (idProducto) WHERE esPrincipal = 1;
+    ON dbo.ImagenProducto (idProducto) WHERE esPrincipal = 1;
 
 -- Número de guía único cuando existe
 CREATE UNIQUE NONCLUSTERED INDEX UX_Envio_NumeroGuia
-    ON Envio (numeroGuia) WHERE numeroGuia IS NOT NULL;
+    ON dbo.Envio (numeroGuia) WHERE numeroGuia IS NOT NULL;
 GO
 
 /* =====================================================================
@@ -428,31 +447,35 @@ GO
 
 -- 1. Catálogo: filtros por categoría y marca en la búsqueda de productos
 CREATE NONCLUSTERED INDEX IX_Producto_Categoria_Marca
-    ON Producto (idCategoria, idMarca) INCLUDE (nombreProducto, precioVigente, activo);
+    ON dbo.Producto (idCategoria, idMarca) INCLUDE (nombreProducto, precioVigente, activo);
 
 -- 2. Historial de pedidos por cliente; R1 y R8 (compras por cliente y fecha)
 CREATE NONCLUSTERED INDEX IX_Pedido_Cliente_Fecha
-    ON Pedido (idCliente, fechaPedido) INCLUDE (idEstado, total);
+    ON dbo.Pedido (idCliente, fechaPedido) INCLUDE (idEstado, total);
 
 -- 3. Reportes por período y estado: R4, R9 y R10 (excluyen cancelados)
 CREATE NONCLUSTERED INDEX IX_Pedido_Estado_Fecha
-    ON Pedido (idEstado, fechaPedido) INCLUDE (idCliente, total);
+    ON dbo.Pedido (idEstado, fechaPedido) INCLUDE (idCliente, total);
 
 -- 4. Productos más vendidos y rentabilidad: R5 y R7
 CREATE NONCLUSTERED INDEX IX_DetallePedido_Producto
-    ON DetallePedido (idProducto) INCLUDE (cantidad, precioUnitario, costoUnitario, descuentoUnitario);
+    ON dbo.DetallePedido (idProducto) INCLUDE (cantidad, precioUnitario, costoUnitario, descuentoUnitario);
 
 -- 5. Conciliación de inventario por producto
 CREATE NONCLUSTERED INDEX IX_MovimientoInventario_Producto_Fecha
-    ON MovimientoInventario (idProducto, fecha) INCLUDE (tipo, cantidad);
+    ON dbo.MovimientoInventario (idProducto, fecha) INCLUDE (tipo, cantidad);
 
 -- 6. Calificación promedio y reseñas en el detalle del producto
 CREATE NONCLUSTERED INDEX IX_Resena_Producto
-    ON Resena (idProducto) INCLUDE (calificacion);
+    ON dbo.Resena (idProducto) INCLUDE (calificacion);
 
 -- 7. Direcciones de un cliente (la FK no crea índice automáticamente)
 CREATE NONCLUSTERED INDEX IX_Direccion_Cliente
-    ON Direccion (idCliente) INCLUDE (activo, esPrincipal);
+    ON dbo.Direccion (idCliente) INCLUDE (activo, esPrincipal);
+
+-- 8. Catálogo filtrado por especie: la PK empieza por idProducto, este índice permite buscar por especie
+CREATE NONCLUSTERED INDEX IX_ProductoEspecie_Especie
+    ON dbo.ProductoEspecie (idEspecie);
 GO
 
 PRINT N'01_esquema.sql ejecutado correctamente: base PetShopNova creada.';

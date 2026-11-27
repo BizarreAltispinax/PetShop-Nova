@@ -5,9 +5,10 @@
    por eso usa INSERT directos con IDs explícitos.
 
    Contenido: 2 roles, 6 estados, 7 transiciones, 4 métodos de pago,
-   4 zonas, 10 marcas, 10 categorías, 50 productos con imagen,
+   4 zonas, 14 marcas, 14 categorías, 6 especies, 70 productos con
+   3 imágenes cada uno (productos 51 a 70: roedores, peces, aves y reptiles),
    21 usuarios (1 admin + 20 clientes), 24 direcciones,
-   38 pedidos (enero a noviembre de 2026; 3 cancelados), 264 movimientos
+   38 pedidos (enero a noviembre de 2026; 3 cancelados), 284 movimientos
    de inventario, 5 promociones, 22 reseñas y 5 carritos activos.
 
    Productos reservados para pruebas (07_pruebas.sql):
@@ -72,7 +73,11 @@ INSERT INTO dbo.Marca (idMarca, nombreMarca) VALUES
     (7, N'NaturaPet'),
     (8, N'PlayPaws'),
     (9, N'VetCare Plus'),
-    (10, N'Michi&Co');
+    (10, N'Michi&Co'),
+    (11, N'TinyPaws'),
+    (12, N'AquaNova'),
+    (13, N'WingSong'),
+    (14, N'ScaleLand');
 SET IDENTITY_INSERT dbo.Marca OFF;
 
 SET IDENTITY_INSERT dbo.Categoria ON;
@@ -86,7 +91,11 @@ INSERT INTO dbo.Categoria (idCategoria, nombreCategoria) VALUES
     (7, N'Camas y descanso'),
     (8, N'Collares y correas'),
     (9, N'Comederos y bebederos'),
-    (10, N'Transportadoras');
+    (10, N'Transportadoras'),
+    (11, N'Jaulas y hábitats'),
+    (12, N'Acuarios y filtración'),
+    (13, N'Terrarios y climatización'),
+    (14, N'Sustratos y lechos');
 SET IDENTITY_INSERT dbo.Categoria OFF;
 
 SET IDENTITY_INSERT dbo.Producto ON;
@@ -140,13 +149,66 @@ INSERT INTO dbo.Producto (idProducto, sku, idMarca, idCategoria, nombreProducto,
     (47, N'PSN-047', 6, 10, N'Transportadora Rígida S', N'Transportadora de plástico con puerta metálica.', N'Hasta 7 kg.', 19500.00, 11800.00, 3, 0),
     (48, N'PSN-048', 6, 10, N'Bolso Transportador Ventilado', N'Bolso de tela con malla y correa.', N'Hasta 6 kg.', 16900.00, 9600.00, 3, 0),
     (49, N'PSN-049', 6, 10, N'Mochila Burbuja para Gato', N'Mochila con ventana transparente.', N'Hasta 6 kg.', 24900.00, 15200.00, 2, 1),
-    (50, N'PSN-050', 8, 10, N'Asiento Protector para Auto', N'Funda impermeable para asiento trasero.', N'Medidas: 140 x 130 cm.', 13900.00, 7600.00, 3, 0);
+    (50, N'PSN-050', 8, 10, N'Asiento Protector para Auto', N'Funda impermeable para asiento trasero.', N'Medidas: 140 x 130 cm.', 13900.00, 7600.00, 3, 0),
+    (51, N'PSN-051', 11, 11, N'Jaula para Hámster 2 Pisos', N'Jaula con bandeja profunda, rampa, casita y bebedero incluidos.', N'Medidas: 60 x 36 x 46 cm. Material: metal y plástico.', 39900.00, 23900.00, 3, 1),
+    (52, N'PSN-052', 11, 4, N'Rueda Silenciosa 21 cm', N'Rueda de ejercicio con rodamiento silencioso y base estable.', N'Diámetro: 21 cm. Material: plástico libre de BPA.', 6900.00, 3800.00, 5, 0),
+    (53, N'PSN-053', 11, 1, N'Alimento Completo para Hámster 800 g', N'Mezcla de granos, semillas y vegetales con vitaminas.', N'Peso: 800 g. Especie: hámster y gerbo.', 4200.00, 2400.00, 8, 0),
+    (54, N'PSN-054', 11, 1, N'Heno de Timothy 1 kg', N'Heno de primer corte rico en fibra para cobayos y conejos.', N'Peso: 1 kg. Especie: cobayo y conejo.', 5600.00, 3200.00, 8, 0),
+    (55, N'PSN-055', 11, 14, N'Sustrato de Papel Reciclado 10 L', N'Lecho absorbente sin polvo para jaulas de roedores y aves.', N'Volumen: 10 L. Absorbe hasta 3 veces su peso.', 6400.00, 3600.00, 6, 0),
+    (56, N'PSN-056', 12, 12, N'Pecera de Vidrio 40 L con Tapa LED', N'Acuario de vidrio templado con tapa e iluminación LED.', N'Medidas: 50 x 30 x 35 cm. Capacidad: 40 L.', 54900.00, 33500.00, 2, 1),
+    (57, N'PSN-057', 12, 12, N'Filtro Interno 400 L/h', N'Filtro sumergible con esponja de doble etapa y caudal regulable.', N'Caudal: 400 L/h. Para acuarios de hasta 80 L.', 12900.00, 7400.00, 4, 0),
+    (58, N'PSN-058', 12, 1, N'Alimento en Escamas Tropical 100 g', N'Escamas balanceadas para peces tropicales de agua dulce.', N'Peso: 100 g. Agua dulce.', 3900.00, 2100.00, 10, 0),
+    (59, N'PSN-059', 12, 6, N'Acondicionador de Agua 250 ml', N'Elimina el cloro y neutraliza metales pesados del agua del grifo.', N'Volumen: 250 ml. Trata hasta 500 L.', 4500.00, 2500.00, 6, 0),
+    (60, N'PSN-060', 12, 12, N'Calentador Sumergible 50 W', N'Calentador con termostato ajustable de 20 a 32 grados.', N'Potencia: 50 W. Para acuarios de 30 a 60 L.', 9900.00, 5800.00, 4, 0),
+    (61, N'PSN-061', 13, 11, N'Jaula para Periquitos con Accesorios', N'Jaula con perchas, comederos y columpio incluidos.', N'Medidas: 47 x 36 x 62 cm. Separación de barrotes: 1 cm.', 34900.00, 20900.00, 2, 1),
+    (62, N'PSN-062', 13, 1, N'Mezcla de Semillas para Periquitos 1 kg', N'Mijo, alpiste y avena para periquitos y canarios.', N'Peso: 1 kg. Especie: periquito y canario.', 3800.00, 2100.00, 10, 0),
+    (63, N'PSN-063', 13, 11, N'Perchas Naturales de Madera x2', N'Perchas de madera con diámetro variable para ejercitar las patas.', N'Largo: 25 cm. Unidades: 2.', 3500.00, 1800.00, 6, 0),
+    (64, N'PSN-064', 13, 4, N'Columpio con Campana para Aves', N'Columpio de madera y acrílico con campana.', N'Alto: 20 cm. Para aves pequeñas.', 2900.00, 1500.00, 6, 0),
+    (65, N'PSN-065', 13, 9, N'Comedero Antidesperdicio para Aves', N'Comedero con protector que evita que se riegue la semilla.', N'Capacidad: 250 ml. Se fija a los barrotes.', 3200.00, 1700.00, 6, 0),
+    (66, N'PSN-066', 14, 13, N'Terrario de Vidrio 60 x 45 x 45 cm', N'Terrario con puertas frontales, ventilación y tapa de malla.', N'Medidas: 60 x 45 x 45 cm. Vidrio de 4 mm.', 89900.00, 56000.00, 1, 1),
+    (67, N'PSN-067', 14, 13, N'Lámpara de Calor 75 W', N'Bombilla de espectro diurno para la zona de asoleo.', N'Potencia: 75 W. Rosca E27.', 8900.00, 5000.00, 4, 0),
+    (68, N'PSN-068', 14, 14, N'Sustrato de Fibra de Coco 8 L', N'Fibra de coco compactada que retiene la humedad del terrario.', N'Volumen: 8 L (expandido). Ladrillo compacto.', 5900.00, 3200.00, 5, 0),
+    (69, N'PSN-069', 14, 1, N'Alimento para Tortuga Acuática 250 g', N'Barritas flotantes con calcio y vitamina D3.', N'Peso: 250 g. Especie: tortuga acuática.', 4600.00, 2600.00, 6, 0),
+    (70, N'PSN-070', 14, 9, N'Bebedero de Roca para Reptiles', N'Bebedero de resina con textura de roca natural.', N'Medidas: 15 x 12 cm. Capacidad: 200 ml.', 4900.00, 2700.00, 4, 0);
 SET IDENTITY_INSERT dbo.Producto OFF;
 
--- Imagen principal por URL (marcador de posición con el SKU)
+-- Tres imágenes por producto (frontend/src/assets/images/catalog):
+--   _image_01 empaque (principal), _image_02 medidas, _image_03 producto en uso
 INSERT INTO dbo.ImagenProducto (idProducto, url, esPrincipal)
-SELECT idProducto, CONCAT(N'https://placehold.co/400x400?text=', sku), 1
-FROM dbo.Producto;
+SELECT p.idProducto,
+       CONCAT(N'/src/assets/images/catalog/', p.sku, N'_image_0', n.numero, N'.png'),
+       CASE WHEN n.numero = 1 THEN 1 ELSE 0 END
+FROM dbo.Producto p
+CROSS JOIN (VALUES (1), (2), (3)) AS n(numero)
+ORDER BY p.idProducto, n.numero;
+
+-- Especies a las que va dirigido cada producto (la tienda no vende animales)
+SET IDENTITY_INSERT dbo.Especie ON;
+INSERT INTO dbo.Especie (idEspecie, nombreEspecie) VALUES
+    (1, N'Perros'),
+    (2, N'Gatos'),
+    (3, N'Roedores y pequeños mamíferos'),
+    (4, N'Peces'),
+    (5, N'Aves'),
+    (6, N'Reptiles');
+SET IDENTITY_INSERT dbo.Especie OFF;
+
+INSERT INTO dbo.ProductoEspecie (idProducto, idEspecie) VALUES
+    -- Solo perros
+    (1, 1), (2, 1), (3, 1), (7, 1), (8, 1), (12, 1), (13, 1), (16, 1), (18, 1), (21, 1),
+    (27, 1), (28, 1), (34, 1), (35, 1), (38, 1), (39, 1), (40, 1), (46, 1), (50, 1),
+    -- Solo gatos
+    (4, 2), (5, 2), (6, 2), (9, 2), (10, 2), (11, 2), (14, 2), (15, 2), (19, 2), (20, 2),
+    (22, 2), (23, 2), (24, 2), (25, 2), (26, 2), (36, 2), (37, 2), (41, 2), (49, 2),
+    -- Perros y gatos
+    (17, 1), (17, 2), (29, 1), (29, 2), (30, 1), (30, 2), (31, 1), (31, 2), (32, 1), (32, 2),
+    (33, 1), (33, 2), (42, 1), (42, 2), (43, 1), (43, 2), (44, 1), (44, 2), (45, 1), (45, 2),
+    (47, 1), (47, 2), (48, 1), (48, 2),
+    -- Nuevas especies (el sustrato de papel sirve para roedores y aves)
+    (51, 3), (52, 3), (53, 3), (54, 3), (55, 3), (55, 5),
+    (56, 4), (57, 4), (58, 4), (59, 4), (60, 4),
+    (61, 5), (62, 5), (63, 5), (64, 5), (65, 5),
+    (66, 6), (67, 6), (68, 6), (69, 6), (70, 6);
 GO
 
 /* ---------------------------------------------------------------------
@@ -194,11 +256,12 @@ GO
 
 /* ---------------------------------------------------------------------
    4. Usuarios, clientes y direcciones
-   IMPORTANTE: reemplacen @hashDemo por un hash bcrypt real de la contraseña
-   de demostración (por ejemplo "Demo2026!"), generado con la misma biblioteca
-   que usa la aplicación. Nunca se guarda la contraseña en texto plano.
+   Todos los usuarios de prueba usan la contraseña de demostración "Nova12345".
+   @hashDemo es su hash bcrypt (12 rondas), generado con la misma biblioteca de
+   la aplicación: cd backend && npm run hash -- "Nova12345".
+   Nunca se guarda la contraseña en texto plano.
    --------------------------------------------------------------------- */
-DECLARE @hashDemo NVARCHAR(255) = N'$2b$12$REEMPLAZAR.ESTE.VALOR.CON.UN.HASH.BCRYPT.REAL.DE.LA.APP';
+DECLARE @hashDemo NVARCHAR(255) = N'$2b$12$2/6VVrmOsdcJByACzU4KwO7cukJif6TvCKQM33UJVyybzW1t5VkF6';
 
 SET IDENTITY_INSERT dbo.Usuario ON;
 INSERT INTO dbo.Usuario (idUsuario, idRol, correo, passwordHash, fechaCreacion) VALUES
@@ -1031,7 +1094,27 @@ INSERT INTO dbo.MovimientoInventario (idProducto, idUsuario, idPedido, tipo, can
     (45, 11, 37, N'SALIDA', 2, '2026-11-17T11:46:00', N'Venta - pedido #37'),
     (7, 16, 38, N'SALIDA', 1, '2026-11-21T12:09:00', N'Venta - pedido #38'),
     (14, 16, 38, N'SALIDA', 1, '2026-11-21T12:09:00', N'Venta - pedido #38'),
-    (18, 16, 38, N'SALIDA', 1, '2026-11-21T12:09:00', N'Venta - pedido #38');
+    (18, 16, 38, N'SALIDA', 1, '2026-11-21T12:09:00', N'Venta - pedido #38'),
+    (51, 1, NULL, N'ENTRADA', 12, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (52, 1, NULL, N'ENTRADA', 20, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (53, 1, NULL, N'ENTRADA', 35, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (54, 1, NULL, N'ENTRADA', 30, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (55, 1, NULL, N'ENTRADA', 25, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (56, 1, NULL, N'ENTRADA', 6, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (57, 1, NULL, N'ENTRADA', 14, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (58, 1, NULL, N'ENTRADA', 40, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (59, 1, NULL, N'ENTRADA', 22, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (60, 1, NULL, N'ENTRADA', 12, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (61, 1, NULL, N'ENTRADA', 6, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (62, 1, NULL, N'ENTRADA', 38, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (63, 1, NULL, N'ENTRADA', 24, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (64, 1, NULL, N'ENTRADA', 20, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (65, 1, NULL, N'ENTRADA', 18, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (66, 1, NULL, N'ENTRADA', 4, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (67, 1, NULL, N'ENTRADA', 15, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (68, 1, NULL, N'ENTRADA', 20, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (69, 1, NULL, N'ENTRADA', 26, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies'),
+    (70, 1, NULL, N'ENTRADA', 10, '2026-11-02T08:00:00', N'Inventario inicial - nuevas especies');
 
 INSERT INTO dbo.Inventario (idProducto, existencia, fechaActualizacion)
 SELECT p.idProducto,

@@ -1,0 +1,24 @@
+{
+  "name": "petshop-nova-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API de PetShop Nova: cada endpoint ejecuta un procedimiento almacenado de SQL Server",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "hash": "node scripts/generar-hash.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mssql": "^11.0.1"
+  }
+}

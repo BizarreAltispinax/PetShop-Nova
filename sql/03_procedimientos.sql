@@ -88,6 +88,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Usuario_CambiarPassword
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;   -- un error de restricción detiene el SP (no sigue al chequeo de @@ROWCOUNT)
     IF NULLIF(LTRIM(RTRIM(@passwordHash)), N'') IS NULL
         THROW 50003, N'El hash de la contraseña es obligatorio.', 1;
 
@@ -149,6 +150,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Actualizar
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;   -- un error de restricción detiene el SP (no sigue al chequeo de @@ROWCOUNT)
     IF NULLIF(LTRIM(RTRIM(@nombreCliente)), N'') IS NULL OR NULLIF(LTRIM(RTRIM(@apellidos)), N'') IS NULL
         THROW 50005, N'El nombre y los apellidos son obligatorios.', 1;
 
@@ -339,6 +341,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Direccion_Desactivar
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;   -- un error de restricción detiene el SP (no sigue al chequeo de @@ROWCOUNT)
     UPDATE dbo.Direccion SET activo = 0, esPrincipal = 0
     WHERE idDireccion = @idDireccion AND idCliente = @idCliente AND activo = 1;
 
@@ -517,6 +520,120 @@ BEGIN
 END;
 GO
 
+/* ---------------------------------------------------------------------
+   Especies (perros, gatos, roedores, peces, aves, reptiles).
+   La tienda no vende animales: la especie indica a quién va dirigido el producto.
+   --------------------------------------------------------------------- */
+CREATE OR ALTER PROCEDURE dbo.sp_Especie_Crear
+    @nombreEspecie NVARCHAR(60),
+    @idEspecie     INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        IF NULLIF(LTRIM(RTRIM(@nombreEspecie)), N'') IS NULL
+            THROW 50014, N'El nombre de la especie es obligatorio.', 1;
+
+        INSERT INTO dbo.Especie (nombreEspecie) VALUES (LTRIM(RTRIM(@nombreEspecie)));
+        SET @idEspecie = SCOPE_IDENTITY();
+    END TRY
+    BEGIN CATCH
+        SET @idEspecie = NULL;
+        IF ERROR_NUMBER() IN (2601, 2627)
+            THROW 50001, N'Ya existe una especie con ese nombre (restricción UQ_Especie_Nombre).', 1;
+        THROW;
+    END CATCH
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Especie_Actualizar
+    @idEspecie     INT,
+    @nombreEspecie NVARCHAR(60),
+    @activo        BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        IF NULLIF(LTRIM(RTRIM(@nombreEspecie)), N'') IS NULL
+            THROW 50014, N'El nombre de la especie es obligatorio.', 1;
+
+        UPDATE dbo.Especie SET nombreEspecie = LTRIM(RTRIM(@nombreEspecie)), activo = @activo
+        WHERE idEspecie = @idEspecie;
+
+        IF @@ROWCOUNT = 0
+            THROW 50015, N'La especie no existe.', 1;
+    END TRY
+    BEGIN CATCH
+        IF ERROR_NUMBER() IN (2601, 2627)
+            THROW 50001, N'Ya existe una especie con ese nombre (restricción UQ_Especie_Nombre).', 1;
+        THROW;
+    END CATCH
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Especie_Listar
+    @soloActivas BIT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT e.idEspecie, e.nombreEspecie, e.activo,
+           (SELECT COUNT(*) FROM dbo.ProductoEspecie pe
+            JOIN dbo.Producto p ON p.idProducto = pe.idProducto
+            WHERE pe.idEspecie = e.idEspecie AND (@soloActivas = 0 OR p.activo = 1)) AS cantidadProductos
+    FROM dbo.Especie e
+    WHERE @soloActivas = 0 OR e.activo = 1
+    ORDER BY e.idEspecie;
+END;
+GO
+
+/* Reemplaza las especies de un producto por la lista recibida (ids separados por coma,
+   p. ej. '1,2'). Se interpreta con STRING_SPLIT, sin SQL dinámico. Todo o nada. */
+CREATE OR ALTER PROCEDURE dbo.sp_Producto_AsignarEspecies
+    @idProducto INT,
+    @especies   NVARCHAR(200)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    DECLARE @lista TABLE (idEspecie INT PRIMARY KEY);
+
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM dbo.Producto WHERE idProducto = @idProducto)
+            THROW 50023, N'El producto no existe.', 1;
+
+        INSERT INTO @lista (idEspecie)
+        SELECT DISTINCT TRY_CAST(LTRIM(RTRIM(value)) AS INT)
+        FROM STRING_SPLIT(ISNULL(@especies, N''), N',')
+        WHERE NULLIF(LTRIM(RTRIM(value)), N'') IS NOT NULL      -- un texto vacío convertiría a 0
+          AND TRY_CAST(LTRIM(RTRIM(value)) AS INT) IS NOT NULL;
+
+        IF NOT EXISTS (SELECT 1 FROM @lista)
+            THROW 50016, N'El producto debe tener al menos una especie.', 1;
+
+        IF EXISTS (SELECT 1 FROM @lista l LEFT JOIN dbo.Especie e ON e.idEspecie = l.idEspecie WHERE e.idEspecie IS NULL)
+            THROW 50015, N'Una de las especies indicadas no existe.', 1;
+
+        BEGIN TRANSACTION;
+
+        DELETE FROM dbo.ProductoEspecie
+        WHERE idProducto = @idProducto
+          AND idEspecie NOT IN (SELECT idEspecie FROM @lista);
+
+        INSERT INTO dbo.ProductoEspecie (idProducto, idEspecie)
+        SELECT @idProducto, l.idEspecie
+        FROM @lista l
+        WHERE NOT EXISTS (SELECT 1 FROM dbo.ProductoEspecie pe
+                          WHERE pe.idProducto = @idProducto AND pe.idEspecie = l.idEspecie);
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
+
 /* =====================================================================
    4. PRODUCTOS E IMÁGENES
    ===================================================================== */
@@ -658,7 +775,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_Producto_Buscar
     @precioMax        DECIMAL(12,2) = NULL,
     @soloDestacados   BIT = 0,
     @soloOfertas      BIT = 0,
-    @incluirInactivos BIT = 0       -- 1 solo para la pantalla de administración
+    @incluirInactivos BIT = 0,      -- 1 solo para la pantalla de administración
+    @idEspecie        INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -673,11 +791,14 @@ BEGIN
            ISNULL(pv.descuentoUnitario, 0)                   AS descuento,
            p.precioVigente - ISNULL(pv.descuentoUnitario, 0) AS precioFinal,
            pv.nombrePromocion,
-           i.existencia,
+           i.existencia, p.stockMinimo,
            CAST(CASE WHEN i.existencia > 0 THEN 1 ELSE 0 END AS BIT) AS disponible,
            img.url AS urlImagen,
            r.calificacionPromedio, r.cantidadResenas,
-           p.destacado, p.activo
+           p.destacado, p.activo,
+           (SELECT STRING_AGG(e.nombreEspecie, N', ') WITHIN GROUP (ORDER BY e.idEspecie)
+            FROM dbo.ProductoEspecie pe JOIN dbo.Especie e ON e.idEspecie = pe.idEspecie
+            WHERE pe.idProducto = p.idProducto) AS especies
     FROM dbo.Producto p
     JOIN dbo.Marca m      ON m.idMarca = p.idMarca
     JOIN dbo.Categoria c  ON c.idCategoria = p.idCategoria
@@ -698,12 +819,14 @@ BEGIN
       AND (@precioMax IS NULL OR p.precioVigente - ISNULL(pv.descuentoUnitario, 0) <= @precioMax)
       AND (@soloDestacados = 0 OR p.destacado = 1)
       AND (@soloOfertas = 0 OR pv.idPromocion IS NOT NULL)
+      AND (@idEspecie IS NULL OR EXISTS (SELECT 1 FROM dbo.ProductoEspecie pe
+                                         WHERE pe.idProducto = p.idProducto AND pe.idEspecie = @idEspecie))
     ORDER BY p.destacado DESC, p.nombreProducto
     OPTION (RECOMPILE);
 END;
 GO
 
--- Detalle de producto: 1) datos, precio y disponibilidad  2) imágenes  3) reseñas
+-- Detalle de producto: 1) datos, precio y disponibilidad  2) imágenes  3) reseñas  4) especies
 CREATE OR ALTER PROCEDURE dbo.sp_Producto_ObtenerDetalle
     @idProducto INT
 AS
@@ -712,14 +835,15 @@ BEGIN
     DECLARE @ahora DATETIME2 = SYSDATETIME();
 
     SELECT p.idProducto, p.sku, p.nombreProducto, p.descripcion, p.especificaciones,
-           m.nombreMarca, c.nombreCategoria, p.precioVigente,
+           p.idMarca, m.nombreMarca, p.idCategoria, c.nombreCategoria, p.precioVigente,
            ISNULL(pv.descuentoUnitario, 0)                   AS descuento,
            p.precioVigente - ISNULL(pv.descuentoUnitario, 0) AS precioFinal,
            pv.nombrePromocion,
            i.existencia,
            CAST(CASE WHEN i.existencia > 0 THEN 1 ELSE 0 END AS BIT) AS disponible,
            r.calificacionPromedio, r.cantidadResenas,
-           p.destacado, p.activo
+           p.destacado, p.activo,
+           p.costo, p.stockMinimo, i.fechaActualizacion
     FROM dbo.Producto p
     JOIN dbo.Marca m      ON m.idMarca = p.idMarca
     JOIN dbo.Categoria c  ON c.idCategoria = p.idCategoria
@@ -741,6 +865,12 @@ BEGIN
     JOIN dbo.Cliente c ON c.idCliente = rs.idCliente
     WHERE rs.idProducto = @idProducto
     ORDER BY rs.fecha DESC;
+
+    SELECT e.idEspecie, e.nombreEspecie
+    FROM dbo.ProductoEspecie pe
+    JOIN dbo.Especie e ON e.idEspecie = pe.idEspecie
+    WHERE pe.idProducto = @idProducto
+    ORDER BY e.idEspecie;
 END;
 GO
 
@@ -822,6 +952,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Promocion_Actualizar
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;   -- un error de restricción detiene el SP (no sigue al chequeo de @@ROWCOUNT)
     IF @tipoDescuento NOT IN ('P', 'M')
         THROW 50031, N'El tipo de descuento debe ser P (porcentaje) o M (monto).', 1;
     IF @valor IS NULL OR @valor <= 0 OR (@tipoDescuento = 'P' AND @valor > 100)
@@ -864,6 +995,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Promocion_QuitarProducto
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;   -- un error de restricción detiene el SP (no sigue al chequeo de @@ROWCOUNT)
     DELETE FROM dbo.ProductoPromocion WHERE idPromocion = @idPromocion AND idProducto = @idProducto;
     IF @@ROWCOUNT = 0
         THROW 50036, N'El producto no estaba incluido en esa promoción.', 1;
@@ -888,6 +1020,20 @@ BEGIN
     WHERE @soloVigentes = 0
        OR (pr.activo = 1 AND @ahora BETWEEN pr.fechaInicio AND pr.fechaFin)
     ORDER BY pr.fechaInicio DESC;
+END;
+GO
+
+-- Productos asignados a una promoción (pantalla de edición de promociones)
+CREATE OR ALTER PROCEDURE dbo.sp_Promocion_ListarProductos
+    @idPromocion INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT p.idProducto, p.sku, p.nombreProducto, p.precioVigente, p.activo
+    FROM dbo.ProductoPromocion pp
+    JOIN dbo.Producto p ON p.idProducto = pp.idProducto
+    WHERE pp.idPromocion = @idPromocion
+    ORDER BY p.nombreProducto;
 END;
 GO
 
@@ -963,6 +1109,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Carrito_CambiarCantidad
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;   -- un error de restricción detiene el SP (no sigue al chequeo de @@ROWCOUNT)
     DECLARE @existencia INT, @msg NVARCHAR(400);
 
     IF @cantidad IS NULL OR @cantidad <= 0
@@ -991,6 +1138,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Carrito_EliminarLinea
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;   -- un error de restricción detiene el SP (no sigue al chequeo de @@ROWCOUNT)
     DELETE dc
     FROM dbo.DetalleCarrito dc
     JOIN dbo.Carrito c ON c.idCarrito = dc.idCarrito
@@ -1076,7 +1224,7 @@ BEGIN
 
     DECLARE @idUsuario INT, @idCarrito INT, @costoEnvio DECIMAL(12,2),
             @subtotal DECIMAL(12,2), @descuento DECIMAL(12,2), @total DECIMAL(12,2),
-            @lineas INT, @actualizadas INT, @ahora DATETIME2 = SYSDATETIME(), @msg NVARCHAR(400);
+            @cantidadLineas INT, @actualizadas INT, @ahora DATETIME2 = SYSDATETIME(), @msg NVARCHAR(400);
 
     DECLARE @Lineas TABLE (
         idProducto        INT PRIMARY KEY,
@@ -1130,9 +1278,9 @@ BEGIN
         JOIN dbo.Producto p ON p.idProducto = dc.idProducto
         OUTER APPLY dbo.fn_PromocionVigente(p.idProducto, p.precioVigente, @ahora) pv
         WHERE dc.idCarrito = @idCarrito;
-        SET @lineas = @@ROWCOUNT;
+        SET @cantidadLineas = @@ROWCOUNT;
 
-        IF @lineas = 0
+        IF @cantidadLineas = 0
             THROW 50083, N'El carrito está vacío.', 1;
 
         IF EXISTS (SELECT 1 FROM @Lineas WHERE activo = 0)
@@ -1151,7 +1299,7 @@ BEGIN
         WHERE i.existencia >= l.cantidad;
         SET @actualizadas = @@ROWCOUNT;
 
-        IF @actualizadas <> @lineas
+        IF @actualizadas <> @cantidadLineas
             THROW 50085, N'Existencia insuficiente para uno o más productos. No se registró el pedido ni se modificó el inventario.', 1;
 
         -- 4. Registrar el pedido
@@ -1318,6 +1466,22 @@ BEGIN
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
         THROW;
     END CATCH
+END;
+GO
+
+/* Estados a los que puede pasar un pedido según TransicionEstado.
+   La interfaz del administrador solo ofrece estas opciones: la regla vive en la BD. */
+CREATE OR ALTER PROCEDURE dbo.sp_Pedido_TransicionesValidas
+    @idPedido INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT e.idEstado, e.nombreEstadoPedido
+    FROM dbo.Pedido p
+    JOIN dbo.TransicionEstado t ON t.idEstadoOrigen = p.idEstado
+    JOIN dbo.EstadoPedido e     ON e.idEstado = t.idEstadoDestino
+    WHERE p.idPedido = @idPedido
+    ORDER BY e.orden;
 END;
 GO
 
