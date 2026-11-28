@@ -132,7 +132,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
 
       <SeccionProductos
         titulo="Ofertas vigentes"
-        subtitulo="Promociones activas: SQL Server aplica automáticamente la de mayor descuento"
+        subtitulo="Promociones activas: si un producto tiene varias, se aplica automáticamente la de mayor descuento"
         textoBoton="Ver todas las ofertas"
         onVerMas={onGoSearchOffers}
         consulta={ofertas}

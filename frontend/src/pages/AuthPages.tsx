@@ -219,7 +219,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onGoLogin
               value={correo}
               onChange={(e) => setCorreo(e.target.value)}
               placeholder="correo@ejemplo.cr"
-              hint="Si el correo ya existe, SQL Server lo rechaza (restricción UQ_Usuario_Correo)."
+              hint="Cada correo solo puede usarse en una cuenta."
               maxLength={150}
               required
             />

@@ -191,7 +191,7 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ orderId, isAdm
       await api.post(`${base}/${orderId}/cancelar`, {});
       await recargarTodo();
     } catch (err) {
-      addToast('error', 'Cancelación rechazada por SQL Server', mensajeError(err));
+      addToast('error', 'No se pudo cancelar el pedido', mensajeError(err));
     }
   };
 
@@ -367,7 +367,7 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ orderId, isAdm
             <div>
               <h2 className="text-base font-bold text-slate-900">Gestión de estado del pedido</h2>
               <p className="text-xs text-slate-500">
-                Las opciones salen de la tabla TransicionEstado. Al pasar a Enviado, SQL Server genera la guía.
+                Solo se muestran los estados a los que puede pasar este pedido. Al marcarlo como Enviado se genera el número de guía.
               </p>
             </div>
             {destinos.length === 0 && p.nombreEstadoPedido !== 'Pendiente' && (
@@ -506,7 +506,7 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ orderId, isAdm
           if (nextStatus) void aplicarEstado(nextStatus);
         }}
         title={`Cancelar pedido #${p.idPedido}`}
-        message="Al cancelar este pedido, SQL Server devuelve el inventario de sus líneas y marca el pago como reembolsado. ¿Confirmar?"
+        message="Al cancelar este pedido, sus productos vuelven al inventario y el pago se marca como reembolsado. ¿Confirmar?"
         confirmLabel="Confirmar cancelación"
         variant="danger"
       />

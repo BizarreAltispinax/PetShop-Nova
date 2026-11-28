@@ -98,7 +98,7 @@ export const CartPage: React.FC<CartPageProps> = ({ onGoCatalog, onGoCheckout, o
 
       {hayAviso && (
         <AlertBanner variant="warning" title="Verifique las cantidades de su carrito">
-          Uno o más productos superan la existencia actual o ya no están disponibles. Si confirma así, SQL Server rechazará el pedido completo.
+          Uno o más productos superan la existencia actual o ya no están disponibles. Si confirma así, el pedido completo será rechazado.
         </AlertBanner>
       )}
 
@@ -381,7 +381,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToCart, onGoLo
             <span className="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-700">Pago simulado</span>
           </div>
           <AlertBanner variant="info">
-            Pago simulado: al confirmar, SQL Server registra el pago aprobado con su referencia y descuenta el inventario en la misma transacción.
+            Pago simulado: al confirmar, el pago queda registrado como aprobado y los productos se reservan de inmediato.
           </AlertBanner>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {metodosPago.map((m) => {

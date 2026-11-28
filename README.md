@@ -28,6 +28,17 @@ Costa Rica. Proyecto Programado II del curso Bases de Datos I.
 
 ## 2. Lista rápida para el día de la presentación
 
+### La forma más fácil: doble clic en `Iniciar PetShop Nova.bat`
+
+Está en la raíz del proyecto. Revisa que Node.js y SQL Server estén listos (si SQL Server está detenido intenta
+encenderlo), instala dependencias y compila el frontend si hace falta, enciende la API en una ventana llamada
+**"PetShop Nova - API"** y abre la página en el navegador. Si la API ya estaba encendida, solo abre la página.
+
+**Para apagar la página, se cierra la ventana "PetShop Nova - API".** Si algo falla, el `.bat` muestra qué fue
+y espera a que se presione una tecla.
+
+### Paso a paso (lo mismo, a mano)
+
 Si la computadora ya tiene todo instalado (como la del equipo), solo hacen falta tres pasos:
 
 1. **Base limpia:** ejecutar los scripts de `sql/` en orden (sección 4).
@@ -95,7 +106,7 @@ en orden y sin correcciones manuales:
 | `04_vistas.sql` | 4 vistas |
 | `05_triggers.sql` | 2 triggers de auditoría (multi-fila) |
 | `06_reportes.sql` | Reportes R1–R10, dashboard y auditoría |
-| `07_pruebas.sql` | Pruebas obligatorias de la sección 10 del enunciado (**pendiente**; mientras tanto, usar la sección 8 de este manual) |
+| `07_pruebas.sql` | Las 10 pruebas obligatorias de la sección 10 del enunciado (antes, acción, esperado, obtenido y PASÓ/FALLÓ) y evidencia de índices; ver sección 8 |
 
 ### Opción A: SSMS
 Abrir cada archivo **en orden** y ejecutarlo (F5). Al final de cada uno aparece el mensaje
@@ -210,6 +221,42 @@ Los demás clientes son `*@correo-demo.cr` (los correos están en `sql/02_datos.
 
 ## 8. Guion de demostración: las 10 pruebas del enunciado (sección 10)
 
+### Ruta de reproducción automática: `sql/07_pruebas.sql`
+Ejecuta las 10 pruebas y la evidencia de índices de una sola vez. Cada prueba muestra los datos
+iniciales (ANTES), la acción (el procedimiento que se llama), el resultado esperado, el obtenido
+(DESPUÉS) y **PASÓ / FALLÓ**. Al final hay una tabla **RESUMEN** con las 10.
+
+- **SSMS:** abrir `sql/07_pruebas.sql` y ejecutar (F5). Las tablas salen en *Resultados* y los textos
+  (esperado / obtenido / resultado) en *Mensajes*.
+- **PowerShell** (desde la carpeta raíz):
+
+  ```powershell
+  sqlcmd -S localhost -E -C -I -b -f 65001 -i sql\07_pruebas.sql
+  ```
+
+  Si alguna prueba falla, termina con error (`$LASTEXITCODE` distinto de 0).
+
+Detalles:
+- Cada prueba prepara sus propios datos con los mismos procedimientos de la aplicación (carrito y
+  movimientos de inventario con motivo `Prueba 07 (Pn): …`), así que funciona sobre la base recién
+  creada y también después de usar la página. Se puede ejecutar varias veces.
+- **Modifica la base** como un uso real (crea pedidos, cancelaciones y movimientos). Para volver a los
+  datos iniciales, ejecutar otra vez `01` … `06`.
+- Después de la prueba 10, el cliente 18 (Ricardo) ya tiene una compra y deja de salir en **R8**:
+  conviene mostrar los reportes **antes** de ejecutar el `07`.
+- La prueba de concurrencia del `07` hace los dos intentos uno tras otro en la misma sesión. La
+  versión **simultánea con dos ventanas de SSMS** está comentada al final del archivo (y en la
+  sección 8.10); su paso 0 deja otra vez PSN-050 con 1 unidad en ambos carritos, así que se puede
+  repetir aunque ya se haya ejecutado el `07`.
+- **Evidencia de índices (sección 4.2 del enunciado):** para 4 índices, la misma consulta con el
+  índice y obligando a recorrer la tabla (`WITH (INDEX(0))`), con las lecturas lógicas de cada una,
+  y cuántas veces los ha usado la aplicación (`sys.dm_db_index_usage_stats`). En el encabezado de esa
+  sección del archivo están los pasos para verlo también en el plan de ejecución (Ctrl+M).
+
+Resultado obtenido el 27/11/2026 en SQL Server Express (`localhost\SQLEXPRESS`): **10 de 10 PASÓ**,
+también en una segunda ejecución seguida.
+
+### Demostración manual desde la página
 Para cada prueba se indica cómo hacerla desde la página y cómo verificarla en SSMS.
 Conviene empezar con la base recién creada (sección 4): los números de pedido y las existencias
 de los ejemplos corresponden a los datos iniciales.

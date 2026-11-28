@@ -84,7 +84,7 @@ export const AdminInventoryPage: React.FC<{ initialLowOnly?: boolean }> = ({ ini
     setRegistrando(true);
     try {
       await api.post('/admin/inventario/movimientos', { idProducto: movProdId, tipo: movTipo, cantidad: Number(movCantidad), motivo: movMotivo.trim() });
-      addToast('success', 'Movimiento registrado', 'La existencia se actualizó en SQL Server.');
+      addToast('success', 'Movimiento registrado', 'La existencia se actualizó.');
       setMovModalOpen(false);
       await Promise.all([inventario.recargar(), kardexProd ? kardex.recargar() : Promise.resolve()]);
     } catch (err) {

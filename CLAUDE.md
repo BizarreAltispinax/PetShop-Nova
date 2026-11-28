@@ -63,7 +63,7 @@ sql/
   04_vistas.sql         4 vistas
   05_triggers.sql       2 triggers de auditoría multi-fila
   06_reportes.sql       sp_R01…sp_R10, sp_Dashboard_Indicadores, sp_Auditoria_Listar
-  (pendiente) 07_pruebas.sql
+  07_pruebas.sql        las 10 pruebas de la sección 10 (PASÓ/FALLÓ + resumen) y evidencia de índices
   docs/
     Diccionario_de_datos_-_Proyecto_Programado_II.docx
     Diagrama_ER.drawio
@@ -89,6 +89,7 @@ frontend/               React 19 + Vite + Tailwind (diseño original de Google A
 1. SQL Server con autenticación mixta y TCP/IP (puerto 1433) activados.
 2. Ejecutar `sql/01` … `06` en orden (SSMS, o `sqlcmd -S localhost -E -C -I -f 65001 -i <archivo>`;
    **`-I` es obligatorio** en sqlcmd: los índices filtrados requieren QUOTED_IDENTIFIER ON).
+   Atajo: doble clic en `Iniciar PetShop Nova.bat` (raíz) hace los pasos 3 y 4 y abre el navegador.
 3. `backend`: copiar `.env.example` a `.env`, `npm install`, `npm start` -> http://localhost:4000.
 4. `frontend`: `npm install`, `npm run build` (la API sirve `frontend/dist`).
    Para desarrollar: `npm run dev` (http://localhost:3000, con proxy de /api al puerto 4000).
@@ -113,7 +114,7 @@ esta computadora) el 2026-11-27. Error corregido: en `sp_Pedido_Confirmar` la va
 |---|---|
 | Diccionario de datos y diagrama ER | Listos (corregidos) |
 | `01_esquema.sql` a `06_reportes.sql` | Ejecutados y probados en SQL Server |
-| `07_pruebas.sql` | **Pendiente** |
+| `07_pruebas.sql` | Listo: 10 de 10 PASÓ (27/11/2026, dos ejecuciones seguidas) |
 | Backend | Listo y probado contra la BD con `app_petshop` |
 | Frontend | Conectado a la API: sin datos simulados ni reglas de negocio en el navegador |
 | README raíz (manual de instalación, ejecución y demostración) | Listo |
@@ -257,9 +258,15 @@ Vistas (`04_vistas.sql`): `vw_CatalogoDisponible`, `vw_ExistenciasBajas`,
    El listado de pedidos del admin usa `sp_R10_ResumenPedidos`.
 2. ~~Backend~~ **Hecho** en `backend/` (ver "Backend: decisiones").
 3. ~~Frontend conectado~~ **Hecho**.
-4. `sql/07_pruebas.sql`: las 10 pruebas obligatorias de la sección 10 de la especificación
-   (estado antes, acción, estado después), evidencia de índices con `SET STATISTICS IO ON`,
-   y la prueba de concurrencia con dos ventanas de SSMS.
+4. ~~`sql/07_pruebas.sql`~~ **Hecho**. Cada prueba prepara sus datos con los SP (temp procs
+   `#VaciarCarrito`, `#FijarExistencia` con AJUSTE de motivo "Prueba 07 (Pn)"), compara antes/después
+   y registra PASÓ/FALLÓ en `#Resultado`; al final, RESUMEN y `RAISERROR` si alguna falla (sqlcmd -b
+   devuelve 1). Es re-ejecutable y modifica la base (pedidos, cancelaciones, movimientos). Clientes:
+   3 (P1, P4), 4 (P5), 20 (P2, P3), 18 y 19 (P10; el 18 queda con una compra y sale de R8).
+   Índices: lecturas lógicas con/sin índice (`sys.dm_exec_requests`, `WITH (INDEX(0))`) y
+   `sys.dm_db_index_usage_stats`; `Pedido` cabe en una página, así que IX_Pedido_Cliente_Fecha da
+   2 contra 2 (está explicado en la columna `observacion`). La concurrencia con dos ventanas de SSMS
+   está comentada al final del archivo.
 5. ~~README y documento PDF~~ **Hechos**. Faltan las capturas de evidencia.
 
 Recuerda la regla del inicio: espera a que el usuario pida cada paso.

@@ -24,7 +24,7 @@ export const AdminAuditPage: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-extrabold text-slate-900">Auditoría</h1>
-        <p className="text-sm text-slate-500">Bitácora automática de los triggers de SQL Server para Producto y Pedido</p>
+        <p className="text-sm text-slate-500">Registro automático de los cambios de precio de productos y de estado de pedidos</p>
       </div>
 
       <div className="bg-white rounded-[12px] border border-slate-200 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

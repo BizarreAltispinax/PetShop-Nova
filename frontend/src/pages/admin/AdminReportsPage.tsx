@@ -19,9 +19,9 @@ const REPORT_MENU: { id: ReportId; title: string; subtitle: string; sp: string }
   { id: 'R05', title: 'R5. Productos más vendidos', subtitle: 'Top 10 por unidades e ingresos', sp: 'sp_R05_ProductosMasVendidos' },
   { id: 'R06', title: 'R6. Inventario crítico', subtitle: 'Bajo mínimo y reposición', sp: 'sp_R06_InventarioCritico' },
   { id: 'R07', title: 'R7. Rentabilidad', subtitle: 'Ingresos vs. costo histórico', sp: 'sp_R07_Rentabilidad' },
-  { id: 'R08', title: 'R8. Clientes sin compras', subtitle: 'NOT EXISTS por rango de fechas', sp: 'sp_R08_ClientesSinCompras' },
-  { id: 'R09', title: 'R9. Comparación mensual', subtitle: 'Variación con LAG', sp: 'sp_R09_ComparacionMensual' },
-  { id: 'R10', title: 'R10. Resumen de pedidos', subtitle: 'Filtros parametrizados', sp: 'sp_R10_ResumenPedidos' },
+  { id: 'R08', title: 'R8. Clientes sin compras', subtitle: 'Sin compras en un rango de fechas', sp: 'sp_R08_ClientesSinCompras' },
+  { id: 'R09', title: 'R9. Comparación mensual', subtitle: 'Variación contra el mes anterior', sp: 'sp_R09_ComparacionMensual' },
+  { id: 'R10', title: 'R10. Resumen de pedidos', subtitle: 'Por estado, fecha y cliente', sp: 'sp_R10_ResumenPedidos' },
 ];
 
 type Fila = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -61,8 +61,13 @@ export const AdminReportsPage: React.FC = () => {
   };
 
   const { datos, cargando, error } = useApi<Fila[] | Fila[][]>(`/admin/reportes/${activo}`, parametros[activo]);
-  const filas = (activo === 'R05' ? [] : (datos as Fila[] | null)) ?? [];
-  const r5 = activo === 'R05' ? ((datos as Fila[][] | null) ?? [[], []]) : [[], []];
+  // Mientras llega la respuesta del reporte nuevo, useApi conserva los datos del anterior.
+  // R05 devuelve dos listas ([[...], [...]]) y los demás una ([...]): se revisa la forma real
+  // de los datos para no tratar filas de otro reporte como si fueran de R05 (o al revés),
+  // porque eso rompía la página completa al cambiar de reporte.
+  const esDoble = Array.isArray(datos) && datos.length > 0 && Array.isArray(datos[0]);
+  const filas: Fila[] = activo !== 'R05' && Array.isArray(datos) && !esDoble ? (datos as Fila[]) : [];
+  const r5: Fila[][] = activo === 'R05' && esDoble ? [(datos as Fila[][])[0] ?? [], (datos as Fila[][])[1] ?? []] : [[], []];
 
   /* ---------- Tablas (las mismas se exportan) ---------- */
   const tablaR2 = (): Tabla => {
@@ -149,7 +154,7 @@ export const AdminReportsPage: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-extrabold text-slate-900">Reportes gerenciales</h1>
-        <p className="text-sm text-slate-500">Consultas analíticas ejecutadas en SQL Server (10 reportes oficiales)</p>
+        <p className="text-sm text-slate-500">Indicadores de ventas, clientes, productos e inventario</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

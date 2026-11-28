@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Edit2, Plus, Tag } from 'lucide-react';
 import { useDb } from '../../store/db';
 import { useApi } from '../../hooks/useApi';
@@ -22,11 +22,25 @@ interface FilaCatalogo {
   cantidadProductos: number;
 }
 
+function useDebounce<T>(valor: T, ms = 400) {
+  const [v, setV] = useState(valor);
+  useEffect(() => {
+    const t = setTimeout(() => setV(valor), ms);
+    return () => clearTimeout(t);
+  }, [valor, ms]);
+  return v;
+}
+
 export const AdminBrandsCategoriesPage: React.FC<{ mode: ModoCatalogo }> = ({ mode }) => {
   const { addToast, recargarCatalogos } = useDb();
   const cfg = MODOS[mode];
   const ruta = cfg.ruta;
-  const { datos, cargando, error, recargar } = useApi<(Marca | Categoria | Especie)[]>(ruta);
+  // Búsqueda por nombre: la filtra SQL Server (@texto de sp_Marca_Listar / sp_Categoria_Listar).
+  // sp_Especie_Listar no recibe texto, así que especies no muestra la caja.
+  const conBusqueda = mode !== 'species';
+  const [busqueda, setBusqueda] = useState('');
+  const textoBuscado = useDebounce(busqueda.trim());
+  const { datos, cargando, error, recargar } = useApi<(Marca | Categoria | Especie)[]>(ruta, conBusqueda ? { texto: textoBuscado } : undefined);
 
   const filas: FilaCatalogo[] = (datos ?? []).map((d) => {
     const r = d as unknown as Record<string, unknown>;
@@ -80,20 +94,31 @@ export const AdminBrandsCategoriesPage: React.FC<{ mode: ModoCatalogo }> = ({ mo
             Catálogo de {cfg.desc} (solo desactivación, sin borrado físico)
           </p>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => {
-            setEditing(null);
-            setNombre('');
-            setFormError(null);
-            setModalOpen(true);
-          }}
-        >
-          <Plus className="w-4 h-4" /> {cfg.nueva}
-        </Button>
+        <div className="flex items-center gap-4">
+          {conBusqueda && (
+            <div className="w-56">
+              <Input placeholder="Buscar por nombre..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+            </div>
+          )}
+          <Button
+            variant="primary"
+            onClick={() => {
+              setEditing(null);
+              setNombre('');
+              setFormError(null);
+              setModalOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4" /> {cfg.nueva}
+          </Button>
+        </div>
       </div>
 
       {error && <AlertBanner variant="error">{error}</AlertBanner>}
+
+      {!cargando && !error && filas.length === 0 && textoBuscado && (
+        <p className="text-sm text-slate-500">No hay {cfg.plural.toLowerCase()} que coincidan con «{textoBuscado}».</p>
+      )}
 
       {cargando && filas.length === 0 ? (
         <TableSkeleton rows={6} cols={4} />
@@ -284,7 +309,7 @@ export const AdminPromotionsPage: React.FC = () => {
         </Button>
       </div>
 
-      <AlertBanner variant="info">Las promociones no se acumulan: SQL Server aplica la de mayor descuento (fn_PromocionVigente).</AlertBanner>
+      <AlertBanner variant="info">Las promociones no se acumulan: si un producto tiene varias vigentes, el sistema aplica la de mayor descuento.</AlertBanner>
       {promociones.error && <AlertBanner variant="error">{promociones.error}</AlertBanner>}
 
       <div className="bg-white rounded-[12px] border border-slate-200 overflow-hidden">

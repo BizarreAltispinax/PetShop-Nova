@@ -212,7 +212,7 @@ export const AdminProductsListPage: React.FC<AdminProductsListPageProps> = ({ on
           </Select>
           <Input label="Porcentaje de ajuste (10 = +10 %, -5 = -5 %)" type="number" value={bulkPct} onChange={(e) => setBulkPct(e.target.value)} required />
           <AlertBanner variant="info">
-            sp_Producto_AjustarPrecioPorCategoria actualiza todos los productos de la categoría en una sola instrucción; el trigger de auditoría registra una fila por cada producto modificado.
+            Se cambia el precio de todos los productos de la categoría a la vez. Cada cambio queda registrado en Auditoría.
           </AlertBanner>
         </form>
       </Modal>
